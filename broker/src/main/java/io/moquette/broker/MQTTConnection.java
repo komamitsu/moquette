@@ -478,6 +478,7 @@ final class MQTTConnection {
 
     public void resendNotAckedPublishes() {
         final Session session = sessionRegistry.retrieve(getClientId());
+LOG.debug("@Resending... session: {}", session);
         session.resendInflightNotAcked();
     }
 

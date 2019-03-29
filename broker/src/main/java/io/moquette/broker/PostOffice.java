@@ -194,6 +194,7 @@ class PostOffice {
 
         connection.sendPubAck(messageID);
 
+        LOG.debug("@Payload#0: {}, payload.refcnt: {}", payload, payload.refCnt());
         if (retain) {
             if (!payload.isReadable()) {
                 retainedRepository.cleanRetained(topic);
@@ -202,6 +203,7 @@ class PostOffice {
                 retainedRepository.retain(topic, msg);
             }
         }
+        LOG.debug("@Payload#1: {}, payload.refcnt: {}", payload, payload.refCnt());
         interceptor.notifyTopicPublished(msg, clientId, username);
     }
 
@@ -212,13 +214,17 @@ class PostOffice {
             MqttQoS qos = lowerQosToTheSubscriptionDesired(sub, publishingQos);
             Session targetSession = this.sessionRegistry.retrieve(sub.getClientId());
 
+LOG.debug("@Target session #0: {}, origPayload: {}, origPayload.refcnt: {}", targetSession, origPayload, origPayload.refCnt());
+
             boolean isSessionPresent = targetSession != null;
             if (isSessionPresent) {
                 LOG.debug("Sending PUBLISH message to active subscriber CId: {}, topicFilter: {}, qos: {}",
                           sub.getClientId(), sub.getTopicFilter(), qos);
                 // we need to retain because duplicate only copy r/w indexes and don't retain() causing refCnt = 0
                 ByteBuf payload = origPayload.retainedDuplicate();
+LOG.debug("@Target session #1: {}, origPayload: {}, origPayload.refcnt: {}, payload: {}, payload.refcnt: {}", targetSession, origPayload, origPayload.refCnt(), payload, payload.refCnt());
                 targetSession.sendPublishOnSessionAtQos(topic, qos, payload);
+LOG.debug("@Target session #2: {}, origPayload: {}, origPayload.refcnt: {}, payload: {}, payload.refcnt: {}", targetSession, origPayload, origPayload.refCnt(), payload, payload.refCnt());
             } else {
                 // If we are, the subscriber disconnected after the subscriptions tree selected that session as a
                 // destination.

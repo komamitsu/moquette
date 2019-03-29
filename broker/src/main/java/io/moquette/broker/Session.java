@@ -235,12 +235,15 @@ class Session {
             inflightTimeouts.add(new InFlightPacket(packetId, FLIGHT_BEFORE_RESEND_MS));
             MqttPublishMessage publishMsg = MQTTConnection.notRetainedPublishWithMessageId(topic.toString(), qos,
                                                                                            payload, packetId);
+LOG.debug("@In canSkipQueue#0: payload: {}, payload.refcnt: {}", payload, payload.refCnt()) ;
             mqttConnection.sendPublish(publishMsg);
+LOG.debug("@In canSkipQueue#0: payload: {}, payload.refcnt: {}", payload, payload.refCnt()) ;
 
             // TODO drainQueueToConnection();?
         } else {
             final SessionRegistry.PublishedMessage msg = new SessionRegistry.PublishedMessage(topic, qos, payload);
             sessionQueue.add(msg);
+LOG.debug("@Not in canSkipQueue: payload: {}, payload.refcnt: {}", payload, payload.refCnt()) ;
         }
     }
 
@@ -276,6 +279,7 @@ class Session {
 
     void pubAckReceived(int ackPacketId) {
         // TODO remain to invoke in somehow m_interceptor.notifyMessageAcknowledged
+LOG.debug("@Removing entry: packetId: {}", ackPacketId);
         inflightWindow.remove(ackPacketId);
         inflightSlots.incrementAndGet();
         drainQueueToConnection();
@@ -287,6 +291,11 @@ class Session {
 
         debugLogPacketIds(expired);
 
+        for (Map.Entry<Integer, SessionRegistry.EnqueuedMessage> entry: inflightWindow.entrySet()) {
+            ByteBuf bb = ((SessionRegistry.PublishedMessage)entry.getValue()).payload;
+            LOG.debug("@In InfightsWindow: id: {}, msg: {}, msg.refcnt: {}", entry.getKey(), bb, bb.refCnt());
+        }
+
         for (InFlightPacket notAckPacketId : expired) {
             if (inflightWindow.containsKey(notAckPacketId.packetId)) {
                 final SessionRegistry.PublishedMessage msg =
@@ -294,6 +303,7 @@ class Session {
                 final Topic topic = msg.topic;
                 final MqttQoS qos = msg.publishingQos;
                 final ByteBuf payload = msg.payload;
+LOG.debug("@Infights: payload: {}, payload.refcnt: {}", payload, payload.refCnt());
                 final ByteBuf copiedPayload = payload.retainedDuplicate();
                 MqttPublishMessage publishMsg = publishNotRetainedDuplicated(notAckPacketId, topic, qos, copiedPayload);
                 mqttConnection.sendPublish(publishMsg);
@@ -327,11 +337,13 @@ class Session {
             inflightSlots.decrementAndGet();
             int sendPacketId = mqttConnection.nextPacketId();
             inflightWindow.put(sendPacketId, msg);
+LOG.debug("@Draining queue#0: msg: {}", msg);
             if (msg instanceof SessionRegistry.PubRelMarker) {
                 MqttMessage pubRel = MQTTConnection.pubrel(sendPacketId);
                 mqttConnection.sendIfWritableElseDrop(pubRel);
             } else {
                 final SessionRegistry.PublishedMessage msgPub = (SessionRegistry.PublishedMessage) msg;
+LOG.debug("@Draining queue#1: msg.refcnt: {}", ((SessionRegistry.PublishedMessage) msg).payload.refCnt());
                 MqttPublishMessage publishMsg = MQTTConnection.notRetainedPublishWithMessageId(msgPub.topic.toString(),
                     msgPub.publishingQos,
                     msgPub.payload, sendPacketId);

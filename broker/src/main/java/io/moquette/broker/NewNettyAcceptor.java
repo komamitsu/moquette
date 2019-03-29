@@ -265,8 +265,8 @@ class NewNettyAcceptor {
         pipeline.addLast("autoflush", new AutoFlushHandler(1, TimeUnit.SECONDS));
         pipeline.addLast("decoder", new MqttDecoder(maxBytesInMessage));
         pipeline.addLast("encoder", MqttEncoder.INSTANCE);
-        pipeline.addLast("metrics", new MessageMetricsHandler(metricsCollector));
-        pipeline.addLast("messageLogger", new MQTTMessageLogger());
+//        pipeline.addLast("metrics", new MessageMetricsHandler(metricsCollector));
+//        pipeline.addLast("messageLogger", new MQTTMessageLogger());
         if (metrics.isPresent()) {
             pipeline.addLast("wizardMetrics", metrics.get());
         }

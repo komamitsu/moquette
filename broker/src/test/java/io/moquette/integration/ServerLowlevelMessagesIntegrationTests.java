@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.awaitility.Awaitility;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import static io.netty.handler.codec.mqtt.MqttConnectReturnCode.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -159,4 +160,30 @@ public class ServerLowlevelMessagesIntegrationTests {
         m_willSubscriber.disconnect();
     }
 
+
+    @Test
+    public void hoge() throws InterruptedException, MqttException {
+        LOG.info("*** hoge ***");
+        String topic = "/my/test";
+        MqttClient s = new MqttClient("tcp://localhost:1883", "Subscriber");
+        MqttClient p = new MqttClient("tcp://localhost:1883", "Publisher");
+
+        try {
+            s.connect();
+            p.connect();
+
+            CountDownLatch latch = new CountDownLatch(1);
+            s.subscribe(topic, 1, (a, b) -> {
+                TimeUnit.SECONDS.sleep(30);
+                latch.countDown();
+            });
+
+            p.publish(topic, "hello".getBytes(), 1, false);
+            latch.await();
+        }
+        finally {
+            s.disconnect();
+            p.disconnect();
+        }
+    }
 }
