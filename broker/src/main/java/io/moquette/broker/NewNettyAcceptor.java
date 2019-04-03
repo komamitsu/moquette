@@ -132,6 +132,7 @@ class NewNettyAcceptor {
     private boolean nettyTcpNodelay;
     private boolean nettySoKeepalive;
     private int nettyChannelTimeoutSeconds;
+    private int nettyWorkerThreads;
     private int maxBytesInMessage;
 
     private Class<? extends ServerSocketChannel> channelClass;
@@ -146,17 +147,18 @@ class NewNettyAcceptor {
         nettyChannelTimeoutSeconds = props.intProp(BrokerConstants.NETTY_CHANNEL_TIMEOUT_SECONDS_PROPERTY_NAME, 10);
         maxBytesInMessage = props.intProp(BrokerConstants.NETTY_MAX_BYTES_PROPERTY_NAME,
                 BrokerConstants.DEFAULT_NETTY_MAX_BYTES_IN_MESSAGE);
+        nettyWorkerThreads = props.intProp(BrokerConstants.NETTY_WORKER_THREADS, 512);
 
         boolean epoll = props.boolProp(BrokerConstants.NETTY_EPOLL_PROPERTY_NAME, false);
         if (epoll) {
             LOG.info("Netty is using Epoll");
             bossGroup = new EpollEventLoopGroup();
-            workerGroup = new EpollEventLoopGroup();
+            workerGroup = new EpollEventLoopGroup(nettyWorkerThreads);
             channelClass = EpollServerSocketChannel.class;
         } else {
             LOG.info("Netty is using NIO");
             bossGroup = new NioEventLoopGroup();
-            workerGroup = new NioEventLoopGroup();
+            workerGroup = new NioEventLoopGroup(nettyWorkerThreads);
             channelClass = NioServerSocketChannel.class;
         }
 
