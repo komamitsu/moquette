@@ -123,19 +123,17 @@ public final class BrokerInterceptor implements Interceptor {
     public void notifyTopicPublished(final MqttPublishMessage msg, final String clientID, final String username) {
         msg.retain();
 
-        executor.execute(() -> {
-                try {
-                    int messageId = msg.variableHeader().messageId();
-                    String topic = msg.variableHeader().topicName();
-                    for (InterceptHandler handler : handlers.get(InterceptPublishMessage.class)) {
-                        LOG.debug("Notifying MQTT PUBLISH message to interceptor. CId={}, messageId={}, topic={}, "
-                                + "interceptorId={}", clientID, messageId, topic, handler.getID());
-                        handler.onPublish(new InterceptPublishMessage(msg, clientID, username));
-                    }
-                } finally {
-                    ReferenceCountUtil.release(msg);
-                }
-        });
+        try {
+            int messageId = msg.variableHeader().messageId();
+            String topic = msg.variableHeader().topicName();
+            for (InterceptHandler handler : handlers.get(InterceptPublishMessage.class)) {
+                LOG.debug("Notifying MQTT PUBLISH message to interceptor. CId={}, messageId={}, topic={}, "
+                        + "interceptorId={}", clientID, messageId, topic, handler.getID());
+                handler.onPublish(new InterceptPublishMessage(msg, clientID, username));
+            }
+        } finally {
+            ReferenceCountUtil.release(msg);
+        }
     }
 
     @Override

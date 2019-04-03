@@ -92,7 +92,7 @@ subprojects {
         from components.java
         groupId "$project.group"
         artifactId "${project.name}"
-        version '0.12.1-optimized'
+        version '0.12.1-aggressively-optimized'
       }
     }
   }

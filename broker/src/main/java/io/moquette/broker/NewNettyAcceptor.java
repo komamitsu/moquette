@@ -150,13 +150,13 @@ class NewNettyAcceptor {
         boolean epoll = props.boolProp(BrokerConstants.NETTY_EPOLL_PROPERTY_NAME, false);
         if (epoll) {
             LOG.info("Netty is using Epoll");
-            bossGroup = new EpollEventLoopGroup();
-            workerGroup = new EpollEventLoopGroup();
+            bossGroup = new EpollEventLoopGroup(256);
+            workerGroup = new EpollEventLoopGroup(512);
             channelClass = EpollServerSocketChannel.class;
         } else {
             LOG.info("Netty is using NIO");
-            bossGroup = new NioEventLoopGroup();
-            workerGroup = new NioEventLoopGroup();
+            bossGroup = new NioEventLoopGroup(256);
+            workerGroup = new NioEventLoopGroup(512);
             channelClass = NioServerSocketChannel.class;
         }
 
